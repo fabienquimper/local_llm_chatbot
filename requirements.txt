@@ -1,0 +1,21 @@
+chromadb
+pypdf
+sentence-transformers
+requests
+streamlit
+
+#sentence-transformers==2.2.2
+#transformers==4.15.0
+#huggingface-hub==0.8.1
+
+# PyTorch (CUDA 12.6) — use PyTorch wheel index only for these two, then restore default index
+--index-url https://download.pytorch.org/whl/cu126
+torch
+torchvision
+--index-url https://pypi.org/simple
+
+# PyTorch (CUDA 11.7) compatible avec sm_61
+#--index-url https://download.pytorch.org/whl/cu117
+#torch==1.13.1
+#torchvision==0.14.1
+#--index-url https://pypi.org/simple
