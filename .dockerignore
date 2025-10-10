@@ -1,0 +1,33 @@
+# .dockerignore
+# Ignore big or useless directories
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.egg-info
+*.log
+
+# Ignore local data and model files
+data/
+models/
+checkpoints/
+venv/
+.env
+.DS_Store
+.idea/
+.git/
+.gitignore
+*.zip
+*.tar
+*.gz
+*.pt
+*.bin
+*.ckpt
+
+# Ignore OneDrive, cache, etc.
+OneDrive/
+*.cache/
+
+# Ignore n8n workspace
+n8n/
