@@ -1,6 +1,14 @@
-## Project introduction
+# Local LLM Chatbot with your OWN PDFs!
+
+## Introduction
 
 This project creates a fully local chatbot that answers questions using your own PDF documents. It builds a vector database from PDFs with ChromaDB (RAG), retrieves relevant passages for each question, and queries a local LM Studio–compatible model for the final answer. Nothing leaves your machine: PDFs, embeddings, and inference all run locally.
+
+![image info](./app_description.png)
+
+## Steps to ask question locally
+
+![image info](./app_description_steps.png)
 
 ## Setup
 
@@ -21,6 +29,7 @@ pip install -r requirements.txt
 ```
 
 Notes:
+
 - The `requirements.txt` includes optional PyTorch wheels for CUDA 12.6. Adjust to your GPU/CPU as needed.
 - If you are on a different CUDA version (or CPU only), install the matching PyTorch build from the official wheel index and then switch back to PyPI (as shown in the file).
 
@@ -119,6 +128,7 @@ docker run --rm -it \
 ```
 
 Flags:
+
 - `--force-reindex`: delete and rebuild the vector database from PDFs.
 - `--timeout`: API read timeout (seconds).
 - `--max-tokens`: maximum number of generated tokens.
@@ -135,6 +145,7 @@ uvicorn server:app --host 127.0.0.1 --port 7860 --reload
 Then open `http://localhost:7860` in your browser.
 
 Features:
+
 - Configure `db_path` and `collection`.
 - Upload specific PDFs and/or set a PDF folder.
 - Build/update the vector DB (with optional force reindex).
