@@ -27,6 +27,7 @@ Notes:
 ## Files overview
 
 - `main_rag_chat.py` (main): RAG chat app that builds a local ChromaDB vector store from PDFs in `./pdf`, then answers questions by retrieving relevant passages and querying the LM Studio–compatible API.
+- `server.py` + `static/` (web UI): FastAPI backend with a simple VueJS UI to upload/select PDFs, choose DB path/collection, build the vector DB, and chat against it.
 - `util_api_call.py` (utility): Minimal client that calls an LM Studio–compatible API. It can list models or send a single prompt to a selected model and print the completion.
 - `util_cuda_detection.py` (utility): Small helper to display CUDA and GPU info as detected by PyTorch.
 
@@ -78,10 +79,14 @@ First run (or when you add/replace PDFs), you can force a fresh index:
 python main_rag_chat.py --force-reindex --timeout 240 --max-tokens 512
 ```
 
-Then ask questions interactively. The script will retrieve the most relevant passages from your PDFs and query the model:
+Then ask questions interactively. The script will retrieve the most relevant passages from your PDFs and query the model. You can also now specify explicit files and a custom DB path/collection:
 
 ```bash
-python main_rag_chat.py --timeout 240 --max-tokens 512
+python main_rag_chat.py --timeout 240 --max-tokens 512 \
+  --pdf-folder ./pdf \
+  --pdf-files ./pdf/a.pdf ./pdf/b.pdf \
+  --db-path ./vectordb --collection docs \
+  --use-existing    # skip indexing if collection exists; error if missing
 ```
 
 ### 3) Quick start script (`start.sh`)
@@ -118,6 +123,22 @@ Flags:
 - `--timeout`: API read timeout (seconds).
 - `--max-tokens`: maximum number of generated tokens.
 - `--stream`: stream model output for progressive display.
+
+### 5) Web UI
+
+Run the FastAPI server (serves the VueJS UI on the same port):
+
+```bash
+uvicorn server:app --host 127.0.0.1 --port 7860 --reload
+```
+
+Then open `http://localhost:7860` in your browser.
+
+Features:
+- Configure `db_path` and `collection`.
+- Upload specific PDFs and/or set a PDF folder.
+- Build/update the vector DB (with optional force reindex).
+- Ask questions in the chat; answers are generated via LM Studio using retrieved context.
 
 ## Troubleshooting
 

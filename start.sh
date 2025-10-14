@@ -2,14 +2,21 @@
 set -euo pipefail
 
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
-VENV_DIR="$PROJECT_DIR/.venv"
 
-if [ ! -d "$VENV_DIR" ]; then
-  echo "Creating virtual environment..."
+# Prefer existing virtual env in this order: .venv, venv, env
+if [ -d "$PROJECT_DIR/.venv" ]; then
+  VENV_DIR="$PROJECT_DIR/.venv"
+elif [ -d "$PROJECT_DIR/venv" ]; then
+  VENV_DIR="$PROJECT_DIR/venv"
+elif [ -d "$PROJECT_DIR/env" ]; then
+  VENV_DIR="$PROJECT_DIR/env"
+else
+  VENV_DIR="$PROJECT_DIR/env"
+  echo "Creating virtual environment at $VENV_DIR..."
   python -m venv "$VENV_DIR"
 fi
 
-if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" || "$OS" == "Windows_NT" ]]; then
+if [[ "${OSTYPE:-}" == "msys" || "${OSTYPE:-}" == "win32" || "${OS:-}" == "Windows_NT" ]]; then
   # Git Bash on Windows may still use Unix-style activation
   # Prefer POSIX activation if present
   # shellcheck disable=SC1091

@@ -1,0 +1,190 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Local RAG Chat</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; background-color: #FFFEFB; }
+      .row { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+      .col { display: flex; flex-direction: column; gap: 8px; }
+      input[type=text] { padding: 8px; min-width: 320px; }
+      button { padding: 8px 12px; cursor: pointer; }
+      .card { border: 1px solid #ddd; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+      .chat { height: 260px; overflow: auto; background: #fafafa; padding: 12px; border: 1px solid #eee; border-radius: 6px; }
+      .msg { margin: 8px 0; }
+      .msg.user { font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <div style="display:flex; align-items:center; gap:12px; margin-bottom:8px;">
+        <img src="/ui/img/logo_local_llm_chatbot_pdfs.png" alt="Local LLM Chatbot with your PDFs" style="height:156px; width:auto;" />
+        
+      </div>
+      <h2>Local LLM Chatbot with your PDFs!</h2>
+
+      <div class="card">
+        <h3>Bases</h3>
+        <div class="row">
+          <input type="text" v-model="newBaseName" placeholder="New base name" />
+          <button @click="createBase">Create base</button>
+          <button @click="refreshBases">Refresh</button>
+        </div>
+        <div v-if="bases.length" style="margin-top:12px;">
+          <div v-for="b in bases" :key="b.name" class="card" style="background:#fcfcfc;">
+            <div class="row" style="justify-content:space-between;">
+              <div><strong>{{ b.name }}</strong> <span v-if="b.indexed" style="color:green;">(indexed)</span><span v-else style="color:#999;">(not indexed)</span></div>
+              <div>
+                <button @click="deleteBase(b.name)">Delete</button>
+              </div>
+            </div>
+            <div style="margin-top:8px;">
+              <input type="file" multiple accept="application/pdf" @change="ev => onBaseFilesChanged(b.name, ev)" />
+              <button @click="() => uploadToBase(b.name)">Upload PDFs</button>
+              <button @click="() => indexBase(b.name)" :disabled="b.indexing && b.indexing.status === 'running'">Build index</button>
+            </div>
+            <div v-if="b.pdf_files && b.pdf_files.length" style="margin-top:8px;">
+              <strong>PDFs:</strong>
+              <ul>
+                <li v-for="f in b.pdf_files" :key="f">
+                  <a :href="pdfPublicUrl(b.name, f)" target="_blank" rel="noopener noreferrer">{{ filenameOnly(f) }}</a>
+                </li>
+              </ul>
+            </div>
+            <div v-if="b.indexing && b.indexing.status === 'running'" style="margin-top:8px;">
+              <div>Indexing… {{ b.indexing.processed_pages || 0 }} / {{ b.indexing.total_pages || 0 }} pages</div>
+              <div style="height:10px; background:#eee; border-radius:4px; overflow:hidden;">
+                <div :style="{ width: indexingPercent(b) + '%', height:'10px', background:'#4caf50' }"></div>
+              </div>
+              <div v-if="b.indexing.eta_seconds">ETA: ~{{ b.indexing.eta_seconds }}s</div>
+            </div>
+            <div v-else-if="b.indexing && b.indexing.status === 'error'" style="margin-top:8px; color:#c00;">Indexing error</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Chat</h3>
+        <div class="chat">
+          <div v-for="(m, idx) in messages" :key="idx" :class="['msg', m.role]">{{ m.role === 'user' ? 'You' : 'Assistant' }}: {{ m.text }}</div>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <select v-model="selectedBase">
+            <option disabled value="">Select a base…</option>
+            <option v-for="b in bases.filter(x => x.indexed)" :key="b.name" :value="b.name">{{ b.name }}</option>
+          </select>
+          <input type="text" v-model="question" placeholder="Ask a question..." @keyup.enter="ask" />
+          <button @click="ask">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const { createApp } = Vue;
+      createApp({
+        data() {
+          return {
+            bases: [],
+            newBaseName: '',
+            baseUploads: {}, // { baseName: File[] }
+            selectedBase: '',
+            question: '',
+            messages: [],
+          };
+        },
+        methods: {
+          async refreshBases() {
+            const res = await fetch('/api/bases');
+            if (res.ok) {
+              const data = await res.json();
+              this.bases = data.bases || [];
+            }
+          },
+          indexingPercent(b) {
+            const t = (b.indexing && b.indexing.total_pages) || 0;
+            const p = (b.indexing && b.indexing.processed_pages) || 0;
+            if (!t) return 0;
+            return Math.min(100, Math.round((p / t) * 100));
+          },
+          filenameOnly(path) {
+            return path.split('/').pop();
+          },
+          pdfPublicUrl(name, fullPath) {
+            const fn = this.filenameOnly(fullPath);
+            return `/api/bases/${encodeURIComponent(name)}/pdf/${encodeURIComponent(fn)}`;
+          },
+          async createBase() {
+            const name = this.newBaseName.trim();
+            if (!name) return;
+            const res = await fetch('/api/bases', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+            if (res.ok) {
+              this.newBaseName = '';
+              await this.refreshBases();
+            }
+          },
+          async deleteBase(name) {
+            const res = await fetch(`/api/bases/${encodeURIComponent(name)}`, { method: 'DELETE' });
+            if (res.ok) {
+              await this.refreshBases();
+              if (this.selectedBase === name) this.selectedBase = '';
+            }
+          },
+          onBaseFilesChanged(name, ev) {
+            const files = Array.from(ev.target.files || []);
+            this.baseUploads[name] = files;
+          },
+          async uploadToBase(name) {
+            const files = this.baseUploads[name] || [];
+            if (!files.length) return;
+            const form = new FormData();
+            for (const f of files) form.append('files', f);
+            const res = await fetch(`/api/bases/${encodeURIComponent(name)}/upload`, { method: 'POST', body: form });
+            if (res.ok) {
+              await this.refreshBases();
+              this.baseUploads[name] = [];
+            }
+          },
+          async indexBase(name) {
+            const res = await fetch(`/api/bases/${encodeURIComponent(name)}/index`, { method: 'POST' });
+            if (res.ok) {
+              await this.refreshBases();
+              // Poll status until done
+              const poll = async () => {
+                const s = await fetch(`/api/bases/${encodeURIComponent(name)}/status`);
+                if (s.ok) {
+                  const st = await s.json();
+                  await this.refreshBases();
+                  if (!st.indexing || st.indexing.status !== 'running') return;
+                }
+                setTimeout(poll, 1000);
+              };
+              setTimeout(poll, 1000);
+            }
+          },
+          async ask() {
+            const q = this.question.trim();
+            if (!q) return;
+            if (!this.selectedBase) { alert('Select a base first'); return; }
+            this.messages.push({ role: 'user', text: q });
+            this.question = '';
+            const payload = { question: q, top_k: 3 };
+            const res = await fetch(`/api/bases/${encodeURIComponent(this.selectedBase)}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (res.ok) {
+              const data = await res.json();
+              this.messages.push({ role: 'assistant', text: data.answer || '(no answer)' });
+            } else {
+              this.messages.push({ role: 'assistant', text: 'Error querying server.' });
+            }
+          },
+        },
+        async mounted() {
+          await this.refreshBases();
+        }
+      }).mount('#app');
+    </script>
+  </body>
+  </html>
+
+

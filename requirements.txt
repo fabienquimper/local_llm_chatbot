@@ -3,6 +3,9 @@ pypdf
 sentence-transformers
 requests
 streamlit
+fastapi
+uvicorn
+python-multipart
 
 #sentence-transformers==2.2.2
 #transformers==4.15.0

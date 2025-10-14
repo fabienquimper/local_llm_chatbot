@@ -1,0 +1,12 @@
+env/
+env330/
+vectordb2/
+bases/
+vectordb/
+uploads/
+n8n/
+pdf/
+datadb/
+tests/
+langchain/
+__pycache__/
