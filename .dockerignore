@@ -1,33 +1,49 @@
-# .dockerignore
-# Ignore big or useless directories
+# Python cache & compiled files
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 *.so
 *.egg-info
-*.log
 
-# Ignore local data and model files
+# Virtual environments
+venv/
+.venv/
+.env/
+
+# Version control
+.git/
+.gitignore
+
+# Logs, caches, system
+*.log
+*.tmp
+*.cache/
+.DS_Store
+.idea/
+.vscode/
+Thumbs.db
+
+# OneDrive, Windows sync
+OneDrive/
+*.lnk
+*.ini
+
+# Data & models (local only)
+pdf/
+vectordb/
 data/
 models/
 checkpoints/
-venv/
-.env
-.DS_Store
-.idea/
-.git/
-.gitignore
-*.zip
-*.tar
-*.gz
 *.pt
 *.bin
 *.ckpt
 
-# Ignore OneDrive, cache, etc.
-OneDrive/
-*.cache/
+# Archives
+*.zip
+*.tar
+*.gz
 
-# Ignore n8n workspace
-n8n/
+# Docker itself
+Dockerfile
+docker-compose.yml

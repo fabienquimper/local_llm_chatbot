@@ -1,5 +1,6 @@
 # Local LLM Chatbot with your OWN PDFs!
 
+
 ## Introduction
 
 This project creates a fully local chatbot that answers questions using your own PDF documents. It builds a vector database from PDFs with ChromaDB (RAG), retrieves relevant passages for each question, and queries a local LM Studio–compatible model for the final answer. Nothing leaves your machine: PDFs, embeddings, and inference all run locally.
@@ -122,6 +123,7 @@ Run with your PDFs mounted read-only and a persistent vector store:
 docker run --rm -it \
   -v $(pwd)/pdf:/app/pdf:ro \
   -v $(pwd)/vectordb:/app/vectordb \
+  -p 7860:7860 \
   -e LMSTUDIO_HOST=host.docker.internal \
   -e LMSTUDIO_PORT=1234 \
   local-rag-chat
